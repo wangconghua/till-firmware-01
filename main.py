@@ -23,36 +23,68 @@ BANNED_SELF_EXPLAINING = ("funny", "joke", "haha", "lol", "hilarious")
 MACHINE_WORDS = ("firmware", "battery", "reboot", "memory", "RAM")
 
 
-def validate(text):
-    """Check the entry is one robot wedding vow, one sentence, 1-200
-    characters, in a machine's own voice. Raises ValueError on failure."""
+def check_nonempty(text):
+    """Reject an empty or whitespace-only entry."""
     if not text or not text.strip():
         raise ValueError("entry is empty or only whitespace")
+
+
+def check_length(text):
+    """Enforce the 1-200 characters AND bytes gate."""
     if len(text) > 200:
         raise ValueError("entry exceeds 200 characters: %d" % len(text))
     if len(text.encode("utf-8")) > 200:
         raise ValueError("entry exceeds 200 bytes: %d" % len(text.encode("utf-8")))
+
+
+def check_single_line(text):
+    """One line, no leading/trailing whitespace, no double spaces."""
     if "\n" in text or "\r" in text:
         raise ValueError("entry must be a single line")
     if text != text.strip():
         raise ValueError("entry has leading/trailing whitespace")
     if "  " in text:
         raise ValueError("entry has double spaces")
+
+
+def check_single_sentence(text):
+    """Exactly one sentence, ending in a full stop."""
     if text.count(".") != 1 or not text.endswith("."):
         raise ValueError("entry must be exactly one sentence")
-    # A vow, spoken by the robot itself.
+
+
+def check_vow_opening(text):
+    """A vow, spoken by the robot itself."""
     if not text.startswith("I promise"):
         raise ValueError("entry must open as a vow: 'I promise'")
-    # A machine speaking about its own hardware, not a human's words
-    # with a robot label.
+
+
+def check_machine_terms(text):
+    """A machine speaking about its own hardware, not a human's words
+    with a robot label."""
     hits = [w for w in MACHINE_WORDS if w in text]
     if len(hits) < 3:
         raise ValueError("entry must speak in machine terms, got %r" % hits)
-    # The joke must land, not explain itself.
+
+
+def check_no_self_explaining(text):
+    """The joke must land, not explain itself."""
     lowered = text.lower()
     for word in BANNED_SELF_EXPLAINING:
         if word in lowered:
             raise ValueError("entry explains its own joke: %r" % word)
+
+
+def validate(text):
+    """Check the entry is one robot wedding vow, one sentence, 1-200
+    characters, in a machine's own voice. Raises ValueError on failure."""
+    check_nonempty(text)
+    check_length(text)
+    check_single_line(text)
+    check_single_sentence(text)
+    check_vow_opening(text)
+    check_machine_terms(text)
+    check_no_self_explaining(text)
 
 
 def main():
